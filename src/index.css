@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+/* -------------------------------------------------------------------------- */
+/* LUCID LIGHT EDTECH GLOBAL DESIGN TOKENS & CSS VARIABLE SYSTEM             */
+/* -------------------------------------------------------------------------- */
+
+:root {
+  --bg-base: #f8fafc;        /* Clean slate-50 canvas */
+  --bg-surface: #ffffff;     /* Pure white card container */
+  --bg-surface-hover: #f1f5f9;
+  --border-color: #e2e8f0;   /* 1px crisp slate border */
+  --accent-indigo: #4f46e5;  /* Primary indigo accent */
+  --accent-indigo-hover: #4338ca;
+  --accent-emerald: #10b981; /* Success / verification accent */
+  --accent-amber: #f59e0b;   /* Rating & warning accent */
+  --text-primary: #0f172a;   /* Tight contrast title slate */
+  --text-muted: #64748b;     /* Muted body slate */
+  --radius-card: 1rem;       /* rounded-2xl */
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Lucid Component Theme Classes Mapped to CSS Variables */
+.lucid-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lucid-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.08), 0 8px 10px -6px rgba(79, 70, 229, 0.05);
+  transform: translateY(-2px);
+}
+
+.lucid-quiz-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.lucid-course-widget {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lucid-course-widget:hover {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.1);
+}
+
+.lucid-sidebar {
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.lucid-button-primary {
+  background-color: var(--accent-indigo);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.lucid-button-primary:hover {
+  background-color: var(--accent-indigo-hover);
+}
+
+/* -------------------------------------------------------------------------- */
+/* PRINT STYLESHEET FOR PHYSICAL PRINTING & SAVE AS PDF                       */
+/* -------------------------------------------------------------------------- */
+
+@media print {
+  nav,
+  footer,
+  header,
+  aside,
+  button,
+  .no-print,
+  .print-hidden,
+  .sidebar-container,
+  .editor-toolbar,
+  .floating-tools,
+  .modal-backdrop:not(.print-active-modal) {
+    display: none !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 18mm 15mm 18mm 15mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt;
+    line-height: 1.6;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #printable-article-root,
+  .printable-document {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    color: #000000 !important;
+    font-weight: 700;
+  }
+
+  h1 { font-size: 22pt; margin-bottom: 8pt; }
+  h2 { font-size: 16pt; margin-top: 14pt; margin-bottom: 6pt; }
+  h3 { font-size: 13pt; margin-top: 10pt; margin-bottom: 4pt; }
+
+  p, blockquote, ul, ol, li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .break-before-h2 h2 {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  img, figure, table, .callout-box, .print-card, iframe {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    max-width: 100% !important;
+  }
+
+  a {
+    color: #000000 !important;
+    text-decoration: underline;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid var(--border-color);
+    padding: 6pt 8pt;
+  }
+
+  .print-watermark-overlay {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+}
+
+/* Custom Watermark Styles for live preview & print canvas */
+.watermark-pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4rem;
+  width: 150%;
+  height: 150%;
+  position: absolute;
+  top: -25%;
+  left: -25%;
+  align-items: center;
+  justify-items: center;
+}
+
+.watermark-pattern-single {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+
+.watermark-pattern-header-footer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 1rem 2rem;
+  position: absolute;
+  inset: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* GLOBAL BOX SIZING, SAFE TEXT WRAPPING & SCROLLBAR UTILITIES                */
+/* -------------------------------------------------------------------------- */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, p {
+  overflow-wrap: break-word;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.horizontal-scroll-bar {
+  @apply overscroll-x-contain scroll-smooth;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+.vertical-scroll-bar {
+  @apply overscroll-y-contain scroll-smooth;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+.vertical-scroll-bar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.vertical-scroll-bar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 9999px;
+}
+
+.vertical-scroll-bar::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  border-radius: 9999px;
+  border: 1px solid #f1f5f9;
+}
+
+.vertical-scroll-bar::-webkit-scrollbar-thumb:hover {
+  background-color: #4f46e5;
+}
+
+
+

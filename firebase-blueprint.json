@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "Article": {
+      "title": "Article",
+      "description": "A blog article or editorial post.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the article." },
+        "content": { "type": "string", "description": "The rich text content of the article." },
+        "authorId": { "type": "string", "description": "The UID of the author." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp." }
+      },
+      "required": ["title", "content", "authorId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Collection of all blog articles."
+    }
+  }
+}

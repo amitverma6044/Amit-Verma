@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EdTech Article & Learning Page Builder</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            },
+            edtech: {
+              teal: '#0d9488',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              purple: '#8b5cf6',
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.2s ease-out forwards',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(6px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <!-- React 18 & ReactDOM & Babel -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .canvas-device-frame { transition: max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased overflow-hidden select-none">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // -------------------------------------------------------------
+    // 1. EDTECH & ARTICLE FOCUSED DATA DEFINITIONS & SVG GENERATORS
+    // -------------------------------------------------------------
+    const SIDEBAR_CATEGORIES = [
+      { id: 'article-header', label: 'Article Header', icon: 'bi-journal-bookmark', count: 4 },
+      { id: 'article-content', label: 'Deep Dive & TOC', icon: 'bi-layout-text-sidebar-reverse', count: 3 },
+      { id: 'tutorial', label: 'Tutorial / Steps', icon: 'bi-list-ol', count: 3 },
+      { id: 'quiz-widget', label: 'Interactive Quiz', icon: 'bi-patch-question', count: 2 },
+      { id: 'problem-solution', label: 'Problem & Hints', icon: 'bi-code-square', count: 3 },
+      { id: 'cheatsheet', label: 'Quick Cheat Sheet', icon: 'bi-card-checklist', count: 3 },
+      { id: 'related-articles', label: 'Related Articles', icon: 'bi-grid-3x2', count: 4 },
+      { id: 'author-profile', label: 'Educator Bio', icon: 'bi-person-badge', count: 2 },
+      { id: 'featured-courses', label: 'Linked Courses', icon: 'bi-collection-play', count: 3 },
+      { id: 'doubts-qa', label: 'Doubts & FAQ', icon: 'bi-chat-dots', count: 3 },
+      { id: 'edtech-nav', label: 'Learning Nav', icon: 'bi-compass', count: 3 },
+      { id: 'study-cta', label: 'Study Newsletter', icon: 'bi-envelope-paper', count: 2 },
+    ];
+
+    const svgThumb = (inner) =>
+      `data:image/svg+xml;utf8,${encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 180">
+          <rect width="300" height="180" fill="#f8fafc" rx="8"/>
+          <rect x="20" y="20" width="100" height="10" rx="3" fill="#4f46e5"/>
+          ${inner}
+        </svg>`
+      )}`;
+
+    // EdTech Catalog Items with focused Article types
+    const CATALOG_ITEMS = [
+      // ARTICLE HEADERS
+      {
+        id: 'art-header-editorial',
+        category: 'article-header',
+        label: 'Editorial Header with Reading Time & Badges',
+        variant: 'article-header-editorial',
+        thumbnail: svgThumb('<rect x="20" y="45" width="70" height="14" rx="4" fill="#e0e7ff"/><rect x="20" y="68" width="260" height="20" rx="4" fill="#0f172a"/><rect x="20" y="96" width="200" height="10" rx="2" fill="#64748b"/><circle cx="30" cy="130" r="10" fill="#4f46e5"/><rect x="48" y="125" width="100" height="8" rx="2" fill="#334155"/>')
+      },
+      {
+        id: 'art-header-split',
+        category: 'article-header',
+        label: 'Article Hero with Cover Illustration',
+        variant: 'article-header-split',
+        thumbnail: svgThumb('<rect x="20" y="45" width="140" height="18" rx="3" fill="#0f172a"/><rect x="20" y="70" width="130" height="8" rx="2" fill="#64748b"/><rect x="20" y="85" width="110" height="8" rx="2" fill="#64748b"/><rect x="20" y="115" width="90" height="24" rx="6" fill="#4f46e5"/><rect x="175" y="45" width="105" height="100" rx="8" fill="#e2e8f0"/>')
+      },
+
+      // DEEP DIVE & TOC
+      {
+        id: 'art-deepdive-toc',
+        category: 'article-content',
+        label: 'Article Body with Sticky Table of Contents',
+        variant: 'article-deepdive-toc',
+        thumbnail: svgThumb('<rect x="20" y="45" width="75" height="110" rx="6" fill="#f1f5f9"/><rect x="28" y="55" width="55" height="6" rx="2" fill="#4f46e5"/><rect x="28" y="68" width="50" height="5" rx="2" fill="#94a3b8"/><rect x="28" y="80" width="50" height="5" rx="2" fill="#94a3b8"/><rect x="110" y="45" width="170" height="14" rx="3" fill="#0f172a"/><rect x="110" y="68" width="170" height="7" rx="2" fill="#475569"/><rect x="110" y="82" width="150" height="7" rx="2" fill="#475569"/><rect x="110" y="105" width="170" height="50" rx="6" fill="#eff6ff"/>')
+      },
+      {
+        id: 'art-key-takeaways',
+        category: 'article-content',
+        label: 'Key Concepts & Formula Callout',
+        variant: 'article-key-takeaways',
+        thumbnail: svgThumb('<rect x="20" y="45" width="260" height="100" rx="8" fill="#ecfdf5"/><rect x="35" y="60" width="120" height="12" rx="3" fill="#059669"/><rect x="35" y="82" width="230" height="6" rx="2" fill="#334155"/><rect x="35" y="96" width="210" height="6" rx="2" fill="#334155"/><rect x="35" y="110" width="180" height="6" rx="2" fill="#334155"/>')
+      },
+
+      // TUTORIAL & STEPS
+      {
+        id: 'tut-step-walkthrough',
+        category: 'tutorial',
+        label: 'Step-by-Step Tutorial with Code Block',
+        variant: 'tutorial-steps',
+        thumbnail: svgThumb('<circle cx="35" cy="65" r="12" fill="#4f46e5"/><rect x="60" y="58" width="140" height="12" rx="3" fill="#0f172a"/><rect x="60" y="80" width="220" height="55" rx="6" fill="#1e293b"/><circle cx="35" cy="155" r="12" fill="#cbd5e1"/>')
+      },
+
+      // INTERACTIVE QUIZ
+      {
+        id: 'quiz-mcq-card',
+        category: 'quiz-widget',
+        label: 'Interactive Knowledge Check (MCQ)',
+        variant: 'quiz-interactive',
+        thumbnail: svgThumb('<rect x="20" y="40" width="260" height="115" rx="8" fill="#ffffff" stroke="#cbd5e1"/><rect x="35" y="55" width="180" height="10" rx="2" fill="#0f172a"/><rect x="35" y="78" width="230" height="18" rx="4" fill="#f8fafc" stroke="#e2e8f0"/><rect x="35" y="102" width="230" height="18" rx="4" fill="#ede9fe" stroke="#8b5cf6"/><rect x="35" y="126" width="230" height="18" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>')
+      },
+
+      // PROBLEM & HINTS
+      {
+        id: 'problem-breakdown',
+        category: 'problem-solution',
+        label: 'Practice Problem with Reveal Solution',
+        variant: 'problem-solution-card',
+        thumbnail: svgThumb('<rect x="20" y="45" width="260" height="105" rx="8" fill="#f8fafc" stroke="#cbd5e1"/><rect x="35" y="58" width="60" height="12" rx="4" fill="#ef4444"/><rect x="105" y="58" width="120" height="12" rx="2" fill="#0f172a"/><rect x="35" y="80" width="230" height="6" rx="2" fill="#64748b"/><rect x="35" y="94" width="190" height="6" rx="2" fill="#64748b"/><rect x="35" y="115" width="95" height="22" rx="4" fill="#0f172a"/>')
+      },
+
+      // CHEAT SHEET
+      {
+        id: 'cheatsheet-grid',
+        category: 'cheatsheet',
+        label: 'Quick Revision Formula Grid',
+        variant: 'cheatsheet-cards',
+        thumbnail: svgThumb('<rect x="20" y="50" width="80" height="100" rx="6" fill="#fef3c7"/><rect x="110" y="50" width="80" height="100" rx="6" fill="#e0e7ff"/><rect x="200" y="50" width="80" height="100" rx="6" fill="#d1fae5"/>')
+      },
+
+      // RELATED ARTICLES
+      {
+        id: 'related-articles-grid',
+        category: 'related-articles',
+        label: 'Recommended Study Guides (3-Col Grid)',
+        variant: 'related-articles-grid',
+        thumbnail: svgThumb('<rect x="20" y="50" width="75" height="105" rx="6" fill="#cbd5e1"/><rect x="110" y="50" width="75" height="105" rx="6" fill="#cbd5e1"/><rect x="200" y="50" width="75" height="105" rx="6" fill="#cbd5e1"/>')
+      },
+
+      // EDUCATOR PROFILE
+      {
+        id: 'author-card',
+        category: 'author-profile',
+        label: 'Faculty & Author Profile Card',
+        variant: 'educator-bio',
+        thumbnail: svgThumb('<circle cx="65" cy="90" r="28" fill="#4f46e5"/><rect x="110" y="70" width="140" height="12" rx="2" fill="#0f172a"/><rect x="110" y="90" width="160" height="6" rx="2" fill="#64748b"/><rect x="110" y="104" width="120" height="6" rx="2" fill="#64748b"/>')
+      },
+
+      // LINKED COURSES
+      {
+        id: 'course-bundle-card',
+        category: 'featured-courses',
+        label: 'Linked Certification Course Banner',
+        variant: 'course-linked-banner',
+        thumbnail: svgThumb('<rect x="20" y="45" width="260" height="105" rx="8" fill="#1e1b4b"/><rect x="40" y="65" width="130" height="14" rx="2" fill="#818cf8"/><rect x="40" y="88" width="170" height="6" rx="2" fill="#cbd5e1"/><rect x="40" y="112" width="85" height="22" rx="5" fill="#4f46e5"/>')
+      },
+
+      // DOUBTS & FAQ
+      {
+        id: 'doubts-accordion',
+        category: 'doubts-qa',
+        label: 'Student Doubts & Discussion FAQ',
+        variant: 'doubts-accordion',
+        thumbnail: svgThumb('<rect x="20" y="50" width="260" height="28" rx="4" fill="#cbd5e1"/><rect x="20" y="86" width="260" height="28" rx="4" fill="#cbd5e1"/><rect x="20" y="122" width="260" height="28" rx="4" fill="#cbd5e1"/><circle cx="260" cy="64" r="5" fill="#4f46e5"/>')
+      },
+
+      // EDTECH NAVIGATION
+      {
+        id: 'edtech-top-nav',
+        category: 'edtech-nav',
+        label: 'Learning Portal Navbar with Search Bar',
+        variant: 'edtech-navbar',
+        thumbnail: svgThumb('<rect x="20" y="50" width="260" height="35" rx="6" fill="#fff" stroke="#cbd5e1"/><rect x="30" y="62" width="45" height="12" rx="3" fill="#4f46e5"/><rect x="90" y="58" width="110" height="18" rx="4" fill="#f1f5f9"/><rect x="235" y="60" width="35" height="16" rx="4" fill="#0f172a"/>')
+      },
+
+      // NEWSLETTER / STUDY DIGEST
+      {
+        id: 'study-digest-cta',
+        category: 'study-cta',
+        label: 'Daily Question & Study Digest Subscription',
+        variant: 'study-newsletter',
+        thumbnail: svgThumb('<rect x="20" y="45" width="260" height="105" rx="8" fill="#f8fafc"/><rect x="60" y="65" width="180" height="12" rx="3" fill="#0f172a"/><rect x="45" y="95" width="140" height="22" rx="4" fill="#ffffff" stroke="#cbd5e1"/><rect x="195" y="95" width="60" height="22" rx="4" fill="#4f46e5"/>')
+      }
+    ];
+
+    // Mock Sample EdTech Articles
+    const SAMPLE_EDTECH_ARTICLES = [
+      {
+        id: 1,
+        title: 'Mastering Dynamic Programming: Memoization vs Tabulation with Real Examples',
+        category: 'Algorithms & Data Structures',
+        readTime: '9 min read',
+        author: 'Prof. Aman Sharma',
+        authorRole: 'Lead CS Faculty & ex-SDE',
+        badge: 'Core Concept',
+        date: 'Oct 24, 2026',
+        difficulty: 'Intermediate',
+        img: 'https://images.unsplash.com/photo-1516116211227-bbc14d455d37?w=600&auto=format&fit=crop&q=80'
+      },
+      {
+        id: 2,
+        title: 'Complete Guide to Transformer Architecture & Attention Mechanism in LLMs',
+        category: 'Artificial Intelligence',
+        readTime: '14 min read',
+        author: 'Dr. Evelyn Vance',
+        authorRole: 'AI Researcher',
+        badge: 'Must Read',
+        date: 'Oct 20, 2026',
+        difficulty: 'Advanced',
+        img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80'
+      },
+      {
+        id: 3,
+        title: 'System Design 101: Understanding Consistent Hashing & Distributed Caching',
+        category: 'System Architecture',
+        readTime: '7 min read',
+        author: 'Kunal Verma',
+        authorRole: 'Distributed Systems Architect',
+        badge: 'Interview Prep',
+        date: 'Oct 18, 2026',
+        difficulty: 'Intermediate',
+        img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80'
+      }
+    ];
+
+    // Initial Starter Layout: A Complete, High-Quality EdTech Article Page
+    const INITIAL_SECTIONS = [
+      {
+        id: 'sec-nav',
+        title: 'EdTech Learning Header & Search',
+        category: 'edtech-nav',
+        variant: 'edtech-navbar',
+        settings: { maxWidth: '1200px', bgColor: '#ffffff', paddingY: 'py-3.5', isDark: false }
+      },
+      {
+        id: 'sec-header',
+        title: 'Article Hero with Reading Meta',
+        category: 'article-header',
+        variant: 'article-header-editorial',
+        settings: { maxWidth: '1000px', bgColor: '#ffffff', paddingY: 'py-10', isDark: false }
+      },
+      {
+        id: 'sec-takeaways',
+        title: 'Key Concepts & Formula Callout',
+        category: 'article-content',
+        variant: 'article-key-takeaways',
+        settings: { maxWidth: '1000px', bgColor: '#ffffff', paddingY: 'py-4', isDark: false }
+      },
+      {
+        id: 'sec-deepdive',
+        title: 'Article Body with Table of Contents',
+        category: 'article-content',
+        variant: 'article-deepdive-toc',
+        settings: { maxWidth: '1000px', bgColor: '#ffffff', paddingY: 'py-8', isDark: false }
+      },
+      {
+        id: 'sec-quiz',
+        title: 'Interactive Knowledge Check (MCQ)',
+        category: 'quiz-widget',
+        variant: 'quiz-interactive',
+        settings: { maxWidth: '1000px', bgColor: '#f8fafc', paddingY: 'py-12', isDark: false }
+      },
+      {
+        id: 'sec-cheatsheet',
+        title: 'Quick Revision Cheat Sheet',
+        category: 'cheatsheet',
+        variant: 'cheatsheet-cards',
+        settings: { maxWidth: '1000px', bgColor: '#ffffff', paddingY: 'py-10', isDark: false }
+      },
+      {
+        id: 'sec-author',
+        title: 'Educator Profile Card',
+        category: 'author-profile',
+        variant: 'educator-bio',
+        settings: { maxWidth: '1000px', bgColor: '#f8fafc', paddingY: 'py-10', isDark: false }
+      },
+      {
+        id: 'sec-related',
+        title: 'Related Study Articles',
+        category: 'related-articles',
+        variant: 'related-articles-grid',
+        settings: { maxWidth: '1200px', bgColor: '#ffffff', paddingY: 'py-12', isDark: false }
+      }
+    ];
+
+    // -------------------------------------------------------------
+    // 2. LIVE SECTION COMPONENT RENDERERS
+    // -------------------------------------------------------------
+    function RenderSectionBlock({ section }) {
+      const { variant } = section;
+
+      // 1. EDTECH NAVBAR
+      if (variant === 'edtech-navbar') {
+        return (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white text-lg shadow-sm">
+                <i className="bi bi-mortarboard-fill"></i>
+              </span>
+              <div>
+                <span className="font-extrabold text-base text-slate-900 tracking-tight block">EduForge Articles</span>
+                <span className="text-[10px] font-semibold text-brand-600 uppercase tracking-widest block -mt-1">Knowledge Hub</span>
+              </div>
+            </div>
+
+            {/* Topic Search Box */}
+            <div className="relative w-full md:w-96">
+              <i className="bi bi-search absolute left-3.5 top-2.5 text-xs text-slate-400"></i>
+              <input
+                type="text"
+                readOnly
+                placeholder="Search concepts, algorithms, formulas (e.g. Dynamic Programming)..."
+                className="w-full pl-9 pr-14 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none"
+              />
+              <span className="absolute right-2 top-2 bg-white border border-slate-200 text-[10px] font-mono px-1.5 py-0.5 rounded text-slate-500">⌘K</span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <button className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+                <i className="bi bi-bookmark"></i> Saved Articles
+              </button>
+              <button className="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow-sm">
+                Explore Syllabus
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // 2. ARTICLE HEADER EDITORIAL
+      if (variant === 'article-header-editorial') {
+        return (
+          <div>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-4 font-medium flex-wrap">
+              <span className="hover:text-brand-600 cursor-pointer">Computer Science</span>
+              <span>/</span>
+              <span className="hover:text-brand-600 cursor-pointer">Algorithms</span>
+              <span>/</span>
+              <span className="text-slate-700 font-semibold">Dynamic Programming</span>
+            </div>
+
+            {/* Badges */}
+            <div className="flex items-center gap-2.5 mb-4 flex-wrap">
+              <span className="bg-brand-50 text-brand-600 border border-brand-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                <i className="bi bi-star-fill mr-1"></i> Core Concept
+              </span>
+              <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                Intermediate Difficulty
+              </span>
+              <span className="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                Updated: Oct 2026
+              </span>
+            </div>
+
+            {/* Main Headline */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
+              Mastering Dynamic Programming: Memoization vs Tabulation with Real Examples
+            </h1>
+
+            <p className="text-base sm:text-lg text-slate-600 mt-4 leading-relaxed font-normal">
+              A comprehensive deep dive into breaking complex recursive problems into overlapping subproblems. Learn how to write optimal O(N) space-time solutions step-by-step.
+            </p>
+
+            {/* Author Meta Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 pt-6 border-t border-slate-100">
+              <div className="flex items-center gap-3">
+                <img
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                  alt="Author"
+                  className="w-11 h-11 rounded-full object-cover ring-2 ring-brand-100"
+                />
+                <div>
+                  <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                    Prof. Aman Sharma <i className="bi bi-patch-check-fill text-brand-600 text-xs"></i>
+                  </div>
+                  <div className="text-xs text-slate-500">Lead Algorithms Faculty • ex-Google SDE</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <i className="bi bi-clock-history text-slate-400"></i> 9 min read
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <i className="bi bi-headphones text-slate-400"></i> Listen (6m)
+                </span>
+                <div className="flex items-center gap-1">
+                  <button className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center">
+                    <i className="bi bi-bookmark"></i>
+                  </button>
+                  <button className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center">
+                    <i className="bi bi-share"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 3. KEY TAKEAWAYS & FORMULA CALLOUT
+      if (variant === 'article-key-takeaways') {
+        return (
+          <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-6 relative overflow-hidden">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
+                <i className="bi bi-lightbulb-fill"></i>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-extrabold text-slate-900 text-base">Key Concept Summary (TL;DR)</h4>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded">
+                    Exam Revision Note
+                  </span>
+                </div>
+                <ul className="text-xs sm:text-sm text-slate-700 space-y-2 mt-2 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <i className="bi bi-check2-circle text-emerald-600 text-base flex-shrink-0 mt-0.5"></i>
+                    <span><strong>Optimal Substructure:</strong> An optimal solution to any problem instance contains optimal solutions to subproblems.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <i className="bi bi-check2-circle text-emerald-600 text-base flex-shrink-0 mt-0.5"></i>
+                    <span><strong>Overlapping Subproblems:</strong> Recursive algorithms visit identical subproblems repeatedly rather than generating new subproblems.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <i className="bi bi-check2-circle text-emerald-600 text-base flex-shrink-0 mt-0.5"></i>
+                    <span><strong>Memoization (Top-Down):</strong> Starts at root, uses recursive stack with hash table cache.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 4. ARTICLE DEEP DIVE WITH STICKY TOC
+      if (variant === 'article-deepdive-toc') {
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+            {/* Left Sticky Table of Contents */}
+            <aside className="md:col-span-4 bg-slate-50 border border-slate-200 rounded-2xl p-5 sticky top-20">
+              <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-slate-500 mb-3 pb-2 border-b border-slate-200">
+                <i className="bi bi-list-nested text-brand-600"></i> Table of Contents
+              </div>
+              <nav className="space-y-1.5 text-xs">
+                {[
+                  { title: '1. What makes a problem DP-eligible?', active: true },
+                  { title: '2. Top-Down Approach (Memoization)', active: false },
+                  { title: '3. Bottom-Up Approach (Tabulation)', active: false },
+                  { title: '4. Space Optimization Techniques', active: false },
+                  { title: '5. Complexity Analysis: O(N) vs O(2^N)', active: false },
+                ].map((item, idx) => (
+                  <a
+                    key={idx}
+                    href={`#section-${idx}`}
+                    className={`block py-1.5 px-2.5 rounded-lg transition font-medium ${
+                      item.active
+                        ? 'bg-brand-50 text-brand-600 font-bold border-l-2 border-brand-600'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    {item.title}
+                  </a>
+                ))}
+              </nav>
+              <div className="mt-5 pt-4 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
+                <span>Reading Progress</span>
+                <span className="font-bold text-brand-600">35%</span>
+              </div>
+              <div className="w-full bg-slate-200 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                <div className="bg-brand-600 h-full rounded-full" style={{ width: '35%' }}></div>
+              </div>
+            </aside>
+
+            {/* Right Rich Article Content */}
+            <article className="md:col-span-8 space-y-6 text-slate-800 leading-relaxed text-sm">
+              <section>
+                <h2 className="text-2xl font-extrabold text-slate-900 mb-3">1. What makes a problem DP-eligible?</h2>
+                <p className="text-slate-600 leading-relaxed mb-4">
+                  Whenever you identify that a brute-force recursive strategy is repeating identical calculations with the exact same inputs (like the standard Fibonacci sequence <code className="bg-slate-100 px-1.5 py-0.5 rounded text-rose-600 font-mono text-xs">F(n) = F(n-1) + F(n-2)</code>), you have <strong>Overlapping Subproblems</strong>.
+                </p>
+                <p className="text-slate-600 leading-relaxed">
+                  Without caching, the recursion tree explodes exponentially to <span className="font-mono font-bold text-slate-800">O(2^N)</span>. By caching previously computed results in an array or dictionary, we turn this into a strictly linear <span className="font-mono font-bold text-brand-600">O(N)</span> execution time.
+                </p>
+              </section>
+
+              {/* Code Snippet Box */}
+              <div className="bg-slate-950 text-slate-200 rounded-xl overflow-hidden shadow-sm border border-slate-800">
+                <div className="bg-slate-900 px-4 py-2 flex items-center justify-between text-xs text-slate-400 font-mono border-b border-slate-800">
+                  <span className="flex items-center gap-1.5 text-slate-300">
+                    <i className="bi bi-file-earmark-code text-brand-400"></i> memoization_example.py
+                  </span>
+                  <button className="hover:text-white transition flex items-center gap-1 text-[11px]">
+                    <i className="bi bi-clipboard"></i> Copy
+                  </button>
+                </div>
+                <pre className="p-4 text-xs font-mono overflow-x-auto leading-relaxed">
+                  <span className="text-purple-400">def</span> <span className="text-blue-400">fib_memo</span>(n, memo={"{}"}):{'\n'}
+                  {'    '}<span className="text-slate-500"># Base case</span>{'\n'}
+                  {'    '}<span className="text-purple-400">if</span> n &lt;= <span className="text-amber-400">1</span>: <span className="text-purple-400">return</span> n{'\n'}
+                  {'    '}<span className="text-slate-500"># Check cached answer</span>{'\n'}
+                  {'    '}<span className="text-purple-400">if</span> n <span className="text-purple-400">in</span> memo: <span className="text-purple-400">return</span> memo[n]{'\n'}
+                  {'    '}<span className="text-slate-500"># Compute and store</span>{'\n'}
+                  {'    '}memo[n] = fib_memo(n - <span className="text-amber-400">1</span>, memo) + fib_memo(n - <span className="text-amber-400">2</span>, memo){'\n'}
+                  {'    '}<span className="text-purple-400">return</span> memo[n]
+                </pre>
+              </div>
+
+              {/* In-article Instructor Note */}
+              <div className="p-4 rounded-xl bg-amber-50 border-l-4 border-amber-500 text-amber-900 text-xs">
+                <strong>Faculty Pro-Tip:</strong> In interview or university exam evaluations, always mention space complexity overhead due to the recursive call stack when discussing Memoization!
+              </div>
+            </article>
+          </div>
+        );
+      }
+
+      // 5. INTERACTIVE QUIZ WIDGET
+      if (variant === 'quiz-interactive') {
+        return <InteractiveEdTechQuiz />;
+      }
+
+      // 6. PRACTICE PROBLEM & REVEAL SOLUTION
+      if (variant === 'problem-solution-card') {
+        return <InteractiveProblemSolution />;
+      }
+
+      // 7. QUICK REVISION CHEAT SHEET
+      if (variant === 'cheatsheet-cards') {
+        return (
+          <div className="w-full">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-brand-600">Revision Deck</span>
+                <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900">Formula & Complexity Cheat Sheet</h3>
+              </div>
+              <button className="text-xs font-bold text-brand-600 hover:text-brand-700 inline-flex items-center gap-1.5 bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-200">
+                <i className="bi bi-download"></i> Download PDF Card
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-5 rounded-2xl bg-indigo-50/60 border border-indigo-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">Pattern 1</span>
+                  <h4 className="font-extrabold text-slate-900 text-base mt-2">0/1 Knapsack Problem</h4>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">Choice between including or excluding item based on weight constraint.</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-indigo-200/60 text-xs font-mono font-bold text-indigo-900">
+                  Time: O(N × W) | Space: O(W)
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-amber-50/60 border border-amber-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded">Pattern 2</span>
+                  <h4 className="font-extrabold text-slate-900 text-base mt-2">Longest Common Subsequence</h4>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">Finding common ordered characters across two strings without altering order.</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-amber-200/60 text-xs font-mono font-bold text-amber-900">
+                  Time: O(M × N) | Space: O(min(M, N))
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-teal-50/60 border border-teal-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-100 px-2 py-0.5 rounded">Pattern 3</span>
+                  <h4 className="font-extrabold text-slate-900 text-base mt-2">Matrix Chain Multiplication</h4>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">Determining optimal parenthesization order to minimize scalar operations.</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-teal-200/60 text-xs font-mono font-bold text-teal-900">
+                  Time: O(N³) | Space: O(N²)
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 8. EDUCATOR BIO
+      if (variant === 'educator-bio') {
+        return (
+          <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
+              alt="Educator"
+              className="w-24 h-24 rounded-2xl object-cover ring-4 ring-slate-100 flex-shrink-0"
+            />
+            <div className="flex-1 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Prof. Aman Sharma</h3>
+                  <p className="text-xs text-brand-600 font-semibold">Head of Computer Science Curriculum • EduForge</p>
+                </div>
+                <button className="px-4 py-1.5 bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold rounded-lg transition self-center sm:self-auto">
+                  + Follow Educator
+                </button>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 mt-3 leading-relaxed">
+                Taught over 85,000+ engineers worldwide. Author of "Cracking the Code System Architecture" and former mentor at IIT Delhi Competitive Coding Circle.
+              </p>
+              <div className="flex items-center justify-center sm:justify-start gap-4 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                <span><strong>42</strong> Published Articles</span>
+                <span>•</span>
+                <span><strong>4.95 ★</strong> Student Rating</span>
+                <span>•</span>
+                <span>Verified Peer-Reviewed</span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 9. RELATED ARTICLES GRID
+      if (variant === 'related-articles-grid') {
+        return (
+          <div>
+            <div className="flex items-end justify-between mb-6 pb-2 border-b border-slate-200">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-brand-600">Next Up In Syllabus</span>
+                <h3 className="text-2xl font-extrabold text-slate-900">Recommended Educational Articles</h3>
+              </div>
+              <a href="#all-articles" className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                View All Study Guides <i className="bi bi-arrow-right"></i>
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {SAMPLE_EDTECH_ARTICLES.map((art) => (
+                <div key={art.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col">
+                  <div className="h-44 relative overflow-hidden bg-slate-100">
+                    <img src={art.img} alt={art.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <span className="absolute top-3 left-3 bg-white/95 backdrop-blur text-[10px] font-bold px-2 py-0.5 rounded text-slate-800 shadow-sm">
+                      {art.category}
+                    </span>
+                    <span className="absolute bottom-3 right-3 bg-slate-900/90 text-white text-[11px] font-semibold px-2 py-0.5 rounded">
+                      {art.readTime}
+                    </span>
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-brand-600 mb-1">
+                        <span>{art.badge}</span> • <span className="text-slate-400">{art.difficulty}</span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm group-hover:text-brand-600 transition-colors line-clamp-2 leading-snug">
+                        {art.title}
+                      </h4>
+                    </div>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                      <span>{art.author}</span>
+                      <i className="bi bi-arrow-right text-slate-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      // 10. LINKED COURSE BANNER
+      if (variant === 'course-linked-banner') {
+        return (
+          <div className="rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-8 md:p-10 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="max-w-xl">
+              <span className="inline-block bg-brand-600 text-white font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full mb-3">
+                Full Specialization Course
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-extrabold leading-tight">
+                Complete Data Structures & Algorithms Accelerator
+              </h3>
+              <p className="text-slate-300 text-xs sm:text-sm mt-2 leading-relaxed">
+                40+ hours of video lessons, 150+ interactive coding exercises, and 1-on-1 mentor code review covering everything discussed in this article.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
+              <button className="px-6 py-3 bg-brand-600 hover:bg-brand-500 font-bold text-xs rounded-xl shadow-lg transition text-center whitespace-nowrap">
+                Enroll In Full Course
+              </button>
+              <button className="px-6 py-3 bg-white/10 hover:bg-white/20 font-semibold text-xs rounded-xl backdrop-blur transition text-center whitespace-nowrap">
+                View Syllabus Outline
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Default fallback
+      return (
+        <div className="p-8 text-center bg-white rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="text-xl font-bold text-slate-900">{section.title}</h3>
+          <p className="text-sm text-slate-500 mt-2">Section variant <span className="font-mono text-brand-600">[{variant}]</span> rendered.</p>
+        </div>
+      );
+    }
+
+    // Interactive MCQ Quiz Component for EdTech Articles
+    function InteractiveEdTechQuiz() {
+      const [selectedOption, setSelectedOption] = useState(null);
+      const [showResult, setShowResult] = useState(false);
+
+      const questionData = {
+        q: 'What is the time complexity of finding the N-th Fibonacci number using Memoization (Top-Down DP)?',
+        options: [
+          { id: 'A', text: 'O(2^N) exponential time', correct: false },
+          { id: 'B', text: 'O(N) linear time', correct: true },
+          { id: 'C', text: 'O(N log N) logarithmic time', correct: false },
+          { id: 'D', text: 'O(1) constant time', correct: false },
+        ],
+        explanation: 'Correct! Memoization ensures that each state F(k) for k from 0 to N is solved exactly once, reducing exponential redundant calls into O(N) operations.'
+      };
+
+      const handleSelect = (idx) => {
+        setSelectedOption(idx);
+        setShowResult(true);
+      };
+
+      return (
+        <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-4">
+            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-600">
+              <i className="bi bi-question-circle-fill"></i> Article Knowledge Check
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400">1 of 1 Question</span>
+          </div>
+
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-5 leading-snug">
+            {questionData.q}
+          </h3>
+
+          <div className="space-y-2.5">
+            {questionData.options.map((opt, i) => {
+              let optStyle = 'border-slate-200 hover:border-brand-500 hover:bg-slate-50 bg-white';
+              if (showResult) {
+                if (opt.correct) optStyle = 'border-emerald-500 bg-emerald-50 text-emerald-950 font-semibold';
+                else if (selectedOption === i) optStyle = 'border-rose-400 bg-rose-50 text-rose-950';
+              }
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => handleSelect(i)}
+                  className={`w-full p-3.5 rounded-xl border text-left text-xs sm:text-sm flex items-center justify-between transition ${optStyle}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                      {opt.id}
+                    </span>
+                    <span>{opt.text}</span>
+                  </div>
+                  {showResult && opt.correct && (
+                    <i className="bi bi-check-circle-fill text-emerald-600 text-base"></i>
+                  )}
+                  {showResult && selectedOption === i && !opt.correct && (
+                    <i className="bi bi-x-circle-fill text-rose-500 text-base"></i>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {showResult && (
+            <div className="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200 animate-fade-in text-xs text-slate-700 leading-relaxed">
+              <strong className="text-slate-900 block mb-1">
+                {questionData.options[selectedOption].correct ? '🎉 Brilliant!' : '⚠️ Review needed:'}
+              </strong>
+              {questionData.explanation}
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={() => { setShowResult(false); setSelectedOption(null); }}
+                  className="px-3 py-1 text-slate-500 hover:text-slate-800 text-[11px] font-semibold"
+                >
+                  Retry Question
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Interactive Problem & Solution Component
+    function InteractiveProblemSolution() {
+      const [showHint, setShowHint] = useState(false);
+      const [showSolution, setShowSolution] = useState(false);
+
+      return (
+        <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="bg-rose-100 text-rose-700 font-bold text-[10px] uppercase px-2 py-0.5 rounded">
+              Practice Challenge
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Climbing Stairs (LeetCode 70)</span>
+          </div>
+
+          <h4 className="text-base font-bold text-slate-900">
+            You are climbing a staircase. It takes n steps to reach the top. Each time you can climb 1 or 2 steps. How many distinct ways can you climb to the top?
+          </h4>
+
+          <div className="flex items-center gap-3 mt-4 pt-3 border-t border-slate-100">
+            <button
+              onClick={() => setShowHint(!showHint)}
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5"
+            >
+              <i className="bi bi-info-circle"></i> {showHint ? 'Hide Hint' : 'Reveal Hint'}
+            </button>
+            <button
+              onClick={() => setShowSolution(!showSolution)}
+              className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-lg transition"
+            >
+              {showSolution ? 'Hide Solution' : 'View Full Solution'}
+            </button>
+          </div>
+
+          {showHint && (
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl">
+              💡 <strong>Hint:</strong> To reach step <code className="font-mono">i</code>, you either arrived from step <code className="font-mono">i-1</code> or <code className="font-mono">i-2</code>. Thus <code className="font-mono">ways[i] = ways[i-1] + ways[i-2]</code>.
+            </div>
+          )}
+
+          {showSolution && (
+            <div className="mt-3 p-4 bg-slate-900 text-slate-200 rounded-xl text-xs font-mono">
+              <div className="text-emerald-400 font-semibold mb-2"># Bottom-Up O(1) Space Solution</div>
+              <div>def climbStairs(n):</div>
+              <div>&nbsp;&nbsp;a, b = 1, 1</div>
+              <div>&nbsp;&nbsp;for _ in range(n - 1):</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;a, b = b, a + b</div>
+              <div>&nbsp;&nbsp;return b</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // -------------------------------------------------------------
+    // 3. MAIN APPLICATION & CONTROLLER
+    // -------------------------------------------------------------
+    function App() {
+      const [pageTitle, setPageTitle] = useState('Dynamic Programming In-Depth Guide');
+      const [sections, setSections] = useState(INITIAL_SECTIONS);
+      const [history, setHistory] = useState([INITIAL_SECTIONS]);
+      const [historyIndex, setHistoryIndex] = useState(0);
+      const [activeDevice, setActiveDevice] = useState('desktop');
+      const [activeCategory, setActiveCategory] = useState(null);
+      const [flyoutOpen, setFlyoutOpen] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedSectionId, setSelectedSectionId] = useState(null);
+      const [showExportModal, setShowExportModal] = useState(false);
+      const [toastMsg, setToastMsg] = useState(null);
+
+      const pushHistory = (newSections) => {
+        const nextHistory = history.slice(0, historyIndex + 1);
+        nextHistory.push(newSections);
+        setHistory(nextHistory);
+        setHistoryIndex(nextHistory.length - 1);
+        setSections(newSections);
+      };
+
+      const handleUndo = () => {
+        if (historyIndex > 0) {
+          setHistoryIndex(historyIndex - 1);
+          setSections(history[historyIndex - 1]);
+          triggerToast('Action undone');
+        }
+      };
+
+      const handleRedo = () => {
+        if (historyIndex < history.length - 1) {
+          setHistoryIndex(historyIndex + 1);
+          setSections(history[historyIndex + 1]);
+          triggerToast('Action redone');
+        }
+      };
+
+      const triggerToast = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 2500);
+      };
+
+      const handleCategoryClick = (catId) => {
+        if (activeCategory === catId && flyoutOpen) {
+          setFlyoutOpen(false);
+          setActiveCategory(null);
+        } else {
+          setActiveCategory(catId);
+          setFlyoutOpen(true);
+        }
+      };
+
+      const displayedItems = useMemo(() => {
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          return CATALOG_ITEMS.filter((item) =>
+            item.label.toLowerCase().includes(q) || item.category.toLowerCase().includes(q)
+          );
+        }
+        if (!activeCategory) return [];
+        return CATALOG_ITEMS.filter((item) => item.category === activeCategory);
+      }, [activeCategory, searchQuery]);
+
+      const handleInsertItem = (item) => {
+        const newSec = {
+          id: `sec-${Date.now()}`,
+          title: item.label,
+          category: item.category,
+          variant: item.variant,
+          settings: {
+            maxWidth: '1000px',
+            bgColor: '#ffffff',
+            paddingY: 'py-10',
+            isDark: false,
+          }
+        };
+        const next = [...sections, newSec];
+        pushHistory(next);
+        setFlyoutOpen(false);
+        setActiveCategory(null);
+        setSelectedSectionId(newSec.id);
+        triggerToast(`Added: ${item.label}`);
+      };
+
+      const handleMoveSection = (idx, dir) => {
+        const targetIdx = idx + dir;
+        if (targetIdx < 0 || targetIdx >= sections.length) return;
+        const copy = [...sections];
+        const [moved] = copy.splice(idx, 1);
+        copy.splice(targetIdx, 0, moved);
+        pushHistory(copy);
+      };
+
+      const handleDuplicateSection = (idx) => {
+        const item = sections[idx];
+        const copy = [...sections];
+        copy.splice(idx + 1, 0, {
+          ...item,
+          id: `sec-${Date.now()}`,
+          title: `${item.title} (Copy)`,
+        });
+        pushHistory(copy);
+        triggerToast('Section duplicated');
+      };
+
+      const handleDeleteSection = (idx) => {
+        const copy = sections.filter((_, i) => i !== idx);
+        pushHistory(copy);
+        setSelectedSectionId(null);
+        triggerToast('Section deleted');
+      };
+
+      const handleUpdateSettings = (id, newSettings) => {
+        const updated = sections.map((s) => (s.id === id ? { ...s, settings: { ...s.settings, ...newSettings } } : s));
+        pushHistory(updated);
+      };
+
+      const getDeviceWidth = () => {
+        switch (activeDevice) {
+          case 'mobile': return 'max-w-[375px]';
+          case 'tablet': return 'max-w-[768px]';
+          case 'desktop': return 'max-w-[1140px]';
+          case 'desktop-lg': return 'max-w-[1380px]';
+          case 'fullview': return 'max-w-full';
+          default: return 'max-w-[1140px]';
+        }
+      };
+
+      const activeSection = sections.find((s) => s.id === selectedSectionId);
+
+      return (
+        <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-200">
+          {/* TOAST POPUP */}
+          {toastMsg && (
+            <div className="fixed top-16 right-6 z-[9999] bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 animate-fade-in border border-slate-700">
+              <i className="bi bi-check-circle-fill text-emerald-400"></i> {toastMsg}
+            </div>
+          )}
+
+          {/* 1. TOPBAR CHROME */}
+          <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-40 flex-shrink-0">
+            <div className="flex items-center gap-3 flex-1 min-w-0 max-w-md">
+              <div className="flex items-center gap-2 font-bold text-xs text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">
+                <i className="bi bi-mortarboard-fill"></i> EdTech Studio
+              </div>
+              <div className="h-4 w-px bg-slate-200"></div>
+              <input
+                type="text"
+                value={pageTitle}
+                onChange={(e) => setPageTitle(e.target.value)}
+                className="px-2.5 py-1 text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg hover:border-slate-300 focus:bg-white focus:border-brand-600 focus:outline-none w-full"
+                placeholder="Enter Article / Topic Title..."
+              />
+            </div>
+
+            {/* Middle group: Actions & Device Simulator */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  className="p-1.5 text-slate-700 hover:bg-white disabled:opacity-30 rounded-lg text-xs"
+                  title="Undo"
+                >
+                  <i className="bi bi-arrow-counterclockwise"></i>
+                </button>
+                <button
+                  onClick={handleRedo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="p-1.5 text-slate-700 hover:bg-white disabled:opacity-30 rounded-lg text-xs"
+                  title="Redo"
+                >
+                  <i className="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+
+              <div className="h-4 w-px bg-slate-200"></div>
+
+              {/* Viewport switch */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                {[
+                  { id: 'desktop-lg', icon: 'bi-display', label: 'Wide (1380px)' },
+                  { id: 'desktop', icon: 'bi-laptop', label: 'Article Reader (1140px)' },
+                  { id: 'tablet', icon: 'bi-tablet', label: 'Tablet (768px)' },
+                  { id: 'mobile', icon: 'bi-phone', label: 'Mobile (375px)' },
+                  { id: 'fullview', icon: 'bi-arrows-fullscreen', label: 'Full 100%' },
+                ].map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => setActiveDevice(d.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs flex items-center gap-1 transition ${
+                      activeDevice === d.id ? 'bg-white text-brand-600 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title={d.label}
+                  >
+                    <i className={d.icon}></i>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right actions */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition"
+              >
+                <i className="bi bi-code-slash"></i> Export Article HTML
+              </button>
+              <button
+                onClick={() => triggerToast('Article published to course syllabus!')}
+                className="px-4 py-1.5 text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white rounded-lg shadow-sm flex items-center gap-1.5 transition"
+              >
+                <i className="bi bi-send-check"></i> Publish
+              </button>
+            </div>
+          </header>
+
+          {/* 2. BODY LAYOUT */}
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* LEFT RAIL: EdTech Categories */}
+            <aside className="w-56 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 z-30">
+              <div className="p-3 border-b border-slate-100">
+                <div className="relative">
+                  <i className="bi bi-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (e.target.value.trim()) setFlyoutOpen(true);
+                    }}
+                    placeholder="Search article blocks..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                EdTech Blocks ({SIDEBAR_CATEGORIES.length})
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-2 grid grid-cols-2 gap-1.5">
+                {SIDEBAR_CATEGORIES.map((cat) => {
+                  const isActive = activeCategory === cat.id && flyoutOpen;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategoryClick(cat.id)}
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition ${
+                        isActive
+                          ? 'bg-brand-50 border-brand-500 text-brand-600 shadow-sm font-bold'
+                          : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-600 hover:border-slate-200'
+                      }`}
+                    >
+                      <i className={`text-xl mb-1 ${cat.icon}`}></i>
+                      <span className="text-[11px] leading-tight line-clamp-1">{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+
+            {/* FLYOUT DRAWER */}
+            <div
+              className={`absolute top-0 bottom-0 left-56 w-[700px] max-w-[85vw] bg-white border-r border-slate-200 shadow-2xl z-30 flex flex-col transition-transform duration-300 ease-out ${
+                flyoutOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+              }`}
+            >
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 capitalize">
+                    {searchQuery ? `Search: "${searchQuery}"` : activeCategory?.replace('-', ' ')}
+                  </h3>
+                  <span className="text-xs text-slate-400">{displayedItems.length} templates available for this educational module</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setFlyoutOpen(false);
+                    setActiveCategory(null);
+                    setSearchQuery('');
+                  }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-200"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 grid grid-cols-2 gap-4">
+                {displayedItems.length === 0 ? (
+                  <div className="col-span-full py-16 text-center text-slate-400">
+                    <i className="bi bi-inbox text-3xl mb-2 block"></i>
+                    No article templates matched your search.
+                  </div>
+                ) : (
+                  displayedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleInsertItem(item)}
+                      className="group cursor-pointer rounded-xl border border-slate-200 hover:border-brand-500 hover:shadow-lg transition bg-slate-50 overflow-hidden flex flex-col"
+                    >
+                      <div className="h-32 bg-slate-100 overflow-hidden border-b border-slate-200 relative">
+                        <img src={item.thumbnail} alt={item.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                        <div className="absolute inset-0 bg-brand-600/0 group-hover:bg-brand-600/10 transition-colors flex items-center justify-center">
+                          <span className="opacity-0 group-hover:opacity-100 bg-white font-bold text-brand-600 text-xs px-2.5 py-1 rounded-md shadow-md transition">
+                            + Insert Section
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-white">
+                        <h4 className="text-xs font-semibold text-slate-800 truncate">{item.label}</h4>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* BACKDROP */}
+            {flyoutOpen && (
+              <div
+                onClick={() => {
+                  setFlyoutOpen(false);
+                  setActiveCategory(null);
+                }}
+                className="absolute inset-0 bg-slate-900/10 z-20"
+              ></div>
+            )}
+
+            {/* CENTER CANVAS */}
+            <main className="flex-1 overflow-y-auto p-6 md:p-8 flex justify-center bg-slate-100">
+              <div className={`w-full canvas-device-frame ${getDeviceWidth()} mx-auto`}>
+                <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden min-h-[85vh]">
+                  {sections.map((section, idx) => {
+                    const isSelected = selectedSectionId === section.id;
+                    return (
+                      <div
+                        key={section.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSectionId(section.id);
+                        }}
+                        className={`relative group border-2 transition-all ${
+                          isSelected ? 'border-brand-500 ring-2 ring-brand-200' : 'border-transparent hover:border-slate-300'
+                        } ${section.settings.paddingY}`}
+                        style={{ backgroundColor: section.settings.bgColor }}
+                      >
+                        {/* Hover Section Toolbar */}
+                        <div
+                          className={`absolute top-2 right-4 z-20 flex items-center gap-1 bg-white/95 backdrop-blur border border-slate-200 shadow-md px-2 py-1 rounded-lg transition-opacity ${
+                            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          <span className="text-[10px] font-mono text-slate-400 mr-1.5 uppercase">{section.category}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleMoveSection(idx, -1); }}
+                            disabled={idx === 0}
+                            className="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-100 disabled:opacity-20 text-slate-600"
+                            title="Move Up"
+                          >
+                            <i className="bi bi-arrow-up"></i>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleMoveSection(idx, 1); }}
+                            disabled={idx === sections.length - 1}
+                            className="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-100 disabled:opacity-20 text-slate-600"
+                            title="Move Down"
+                          >
+                            <i className="bi bi-arrow-down"></i>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDuplicateSection(idx); }}
+                            className="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-100 text-slate-600"
+                            title="Duplicate"
+                          >
+                            <i className="bi bi-copy"></i>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteSection(idx); }}
+                            className="w-6 h-6 rounded flex items-center justify-center hover:bg-red-50 text-red-500"
+                            title="Delete"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+
+                        {/* Section Content */}
+                        <div
+                          className="mx-auto px-4 sm:px-6"
+                          style={{ maxWidth: section.settings.maxWidth }}
+                        >
+                          <RenderSectionBlock section={section} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </main>
+
+            {/* RIGHT INSPECTOR */}
+            {activeSection && (
+              <aside className="w-72 bg-white border-l border-slate-200 flex flex-col z-30 animate-fade-in shadow-lg">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                  <div className="flex items-center gap-2">
+                    <i className="bi bi-sliders text-brand-600"></i>
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Article Block Settings</h3>
+                  </div>
+                  <button
+                    onClick={() => setSelectedSectionId(null)}
+                    className="w-6 h-6 rounded hover:bg-slate-200 text-slate-400 text-xs flex items-center justify-center"
+                  >
+                    <i className="bi bi-x"></i>
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-6 text-xs">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Block Title</label>
+                    <input
+                      type="text"
+                      value={activeSection.title}
+                      onChange={(e) => handleUpdateSettings(activeSection.id, { title: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-slate-800 font-semibold focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-2">Reading Container Width</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['800px', '1000px', '1200px'].map((w) => (
+                        <button
+                          key={w}
+                          onClick={() => handleUpdateSettings(activeSection.id, { maxWidth: w })}
+                          className={`py-1.5 rounded-lg border text-center font-bold ${
+                            activeSection.settings.maxWidth === w
+                              ? 'bg-brand-600 text-white border-brand-600'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {w}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-2">Background Accent</label>
+                    <div className="flex items-center gap-2">
+                      {['#ffffff', '#f8fafc', '#f0fdf4', '#eff6ff', '#fefce8'].map((hex) => (
+                        <button
+                          key={hex}
+                          onClick={() => handleUpdateSettings(activeSection.id, { bgColor: hex })}
+                          className={`w-7 h-7 rounded-full border shadow-sm transition-transform ${
+                            activeSection.settings.bgColor === hex ? 'scale-125 ring-2 ring-brand-500 ring-offset-2' : 'hover:scale-110'
+                          }`}
+                          style={{ backgroundColor: hex }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-2">Vertical Spacing</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { label: 'Tight', val: 'py-4' },
+                        { label: 'Normal', val: 'py-8' },
+                        { label: 'Relaxed', val: 'py-12' },
+                        { label: 'Large', val: 'py-16' },
+                      ].map((p) => (
+                        <button
+                          key={p.val}
+                          onClick={() => handleUpdateSettings(activeSection.id, { paddingY: p.val })}
+                          className={`py-1.5 rounded-lg border font-bold text-center ${
+                            activeSection.settings.paddingY === p.val
+                              ? 'bg-brand-600 text-white border-brand-600'
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-indigo-900">
+                    <span className="font-bold block mb-1">EdTech Publishing Tip:</span>
+                    Articles with structured Table of Contents and an inline Knowledge Check have 45% higher student completion rates.
+                  </div>
+                </div>
+              </aside>
+            )}
+          </div>
+
+          {/* 3. HTML EXPORT MODAL */}
+          {showExportModal && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                  <div className="flex items-center gap-2">
+                    <i className="bi bi-file-earmark-code text-brand-600 text-lg"></i>
+                    <h3 className="font-bold text-sm text-slate-900">Export Self-Contained Article HTML</h3>
+                  </div>
+                  <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600">
+                    <i className="bi bi-x-lg"></i>
+                  </button>
+                </div>
+                <div className="p-4 flex-1 overflow-hidden flex flex-col">
+                  <p className="text-xs text-slate-500 mb-2">
+                    Ready-to-deploy responsive EdTech article template formatted with Tailwind CSS:
+                  </p>
+                  <textarea
+                    readOnly
+                    value={`<!-- Generated with EduForge: ${pageTitle} -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${pageTitle}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased">
+  <article class="w-full">
+${sections
+  .map(
+    (s) => `    <section id="${s.id}" class="w-full ${s.settings.paddingY}" style="background-color: ${s.settings.bgColor}">
+      <div class="mx-auto px-4" style="max-width: ${s.settings.maxWidth}">
+        <!-- EdTech Module: ${s.title} [${s.variant}] -->
+      </div>
+    </section>`
+  )
+  .join('\n')}
+  </article>
+</body>
+</html>`}
+                    className="w-full flex-1 p-3 bg-slate-900 text-emerald-400 font-mono text-xs rounded-xl focus:outline-none resize-none"
+                    rows={16}
+                  ></textarea>
+                </div>
+                <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(document.querySelector('textarea').value);
+                      triggerToast('Article HTML copied to clipboard!');
+                    }}
+                    className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-lg shadow transition"
+                  >
+                    <i className="bi bi-clipboard mr-1"></i> Copy Article Code
+                  </button>
+                  <button
+                    onClick={() => setShowExportModal(false)}
+                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs rounded-lg transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
